@@ -10,6 +10,15 @@
             theme: { extend: { colors: { blood: '#8a0303', sickly: '#bada55', void: '#0a0a0a' } } }
         }
     </script>
+    <style>
+        .touch-manipulation {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #modal-content {
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
 </head>
 <body class="bg-void text-gray-300 font-sans antialiased min-h-screen flex flex-col relative">
 
@@ -48,8 +57,18 @@
         const fallbackImage = "https://placehold.co/600x400/111111/555555?text=NO+IMAGE+ON+FILE";
 
         function openModal(monster) {
+            // We use the exact path from data.js (e.g., "images/squonk.jpg")
+            // Prefixed with ./ to force relative pathing
+            const imgPath = `./${monster.image}`;
+
             modalContent.innerHTML = `
-                <img src="${monster.image}" onerror="this.src='${fallbackImage}'" class="w-full h-64 object-cover border-b-2 border-blood" alt="${monster.name}">
+                <div class="relative">
+                    <img src="${imgPath}" 
+                         onerror="this.src='${fallbackImage}'" 
+                         class="w-full h-64 object-cover border-b-2 border-blood" 
+                         alt="${monster.name}">
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60"></div>
+                </div>
                 <div class="p-6">
                     <h2 class="text-4xl font-black text-sickly drop-shadow-md mb-2">${monster.name}</h2>
                     <div class="mb-4 text-sm text-gray-400 font-bold uppercase tracking-widest border-b border-gray-800 pb-4">${monster.category} • ${monster.origin}</div>
@@ -94,11 +113,13 @@
 
             monstersToRender.forEach(monster => {
                 const card = document.createElement('div');
-                card.className = "bg-gray-900 border border-gray-800 rounded-xl shadow-lg hover:border-blood hover:shadow-[0_0_20px_rgba(138,3,3,0.4)] transition-all duration-300 flex flex-col h-full cursor-pointer overflow-hidden";
+                card.className = "bg-gray-900 border border-gray-800 rounded-xl shadow-lg hover:border-blood hover:shadow-[0_0_20px_rgba(138,3,3,0.4)] active:scale-95 transition-all duration-300 flex flex-col h-full cursor-pointer overflow-hidden touch-manipulation";
                 card.addEventListener('click', () => openModal(monster));
                 
+                const cardImgPath = `./${monster.image}`;
+
                 card.innerHTML = `
-                    <img src="${monster.image}" onerror="this.src='${fallbackImage}'" class="w-full h-48 object-cover border-b border-gray-800" alt="${monster.name}">
+                    <img src="${cardImgPath}" onerror="this.src='${fallbackImage}'" class="w-full h-48 object-cover border-b border-gray-800" alt="${monster.name}">
                     <div class="p-5 flex flex-col flex-grow">
                         <div class="flex justify-between items-start mb-2">
                             <h2 class="text-2xl font-bold text-sickly drop-shadow-md">${monster.name}</h2>
