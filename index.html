@@ -9,7 +9,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            theme: { extend: { colors: { blood: '#8a0303', sickly: '#bada55', void: '#0a0a0a' } } }
+            theme: { 
+                extend: { 
+                    colors: { blood: '#8a0303', sickly: '#bada55', void: '#0a0a0a' }
+                } 
+            }
         }
     </script>
     <style>
@@ -20,6 +24,9 @@
         #modal-content {
             -webkit-overflow-scrolling: touch;
         }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #8a0303; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-void text-gray-300 font-sans antialiased min-h-screen flex flex-col relative">
@@ -28,9 +35,26 @@
         <div class="max-w-7xl mx-auto flex flex-col gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-black text-blood text-center uppercase tracking-widest drop-shadow-md">Creepydex</h1>
-                <p class="text-center text-xs text-gray-500 mt-1 font-mono uppercase tracking-wider">Cataloging the world's worst neighbors</p>
+                <p class="text-center text-xs text-gray-500 mt-1 font-mono uppercase tracking-wider italic">Global Paranormal Archive</p>
             </div>
-            <input type="text" id="search-input" placeholder="Search by name, origin, or category..." class="w-full bg-black border border-gray-700 text-gray-200 rounded-lg p-3 text-base md:text-lg focus:outline-none focus:border-blood focus:ring-1 focus:ring-blood transition-colors shadow-inner font-mono placeholder-gray-600">
+            
+            <div class="flex flex-col md:flex-row gap-3">
+                <input type="text" id="search-input" placeholder="Search name, origin, or category..." class="flex-grow bg-black border border-gray-700 text-gray-200 rounded-lg p-3 text-base focus:outline-none focus:border-blood focus:ring-1 focus:ring-blood transition-colors shadow-inner font-mono placeholder-gray-600">
+                
+                <div class="flex gap-2">
+                    <select id="location-select" class="bg-black border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none focus:border-blood font-mono cursor-pointer outline-none min-w-[140px]">
+                        <option value="all">Global (All)</option>
+                    </select>
+
+                    <select id="sort-select" class="bg-black border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none focus:border-blood font-mono cursor-pointer outline-none">
+                        <option value="id">Sort by: ID</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="category">Category</option>
+                        <option value="danger_desc">Danger (High)</option>
+                        <option value="danger_asc">Danger (Low)</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -52,23 +76,42 @@
     <script>
         const listContainer = document.getElementById('monster-list');
         const searchInput = document.getElementById('search-input');
+        const sortSelect = document.getElementById('sort-select');
+        const locationSelect = document.getElementById('location-select');
         const modal = document.getElementById('monster-modal');
         const modalContent = document.getElementById('modal-content');
         const closeModalBtn = document.getElementById('close-modal');
         
         const fallbackImage = "https://placehold.co/600x400/111111/555555?text=NO+IMAGE+ON+FILE";
 
-        function openModal(monster) {
-            // We use the exact path from data.js (e.g., "images/squonk.jpg")
-            // Prefixed with ./ to force relative pathing
-            const imgPath = `./${monster.image}`;
+        function populateLocations() {
+            const locations = new Set();
+            cryptids.forEach(m => {
+                const parts = m.origin.split(',');
+                const region = parts[parts.length - 1].trim();
+                locations.add(region);
+            });
 
+            const sortedLocations = Array.from(locations).sort();
+            sortedLocations.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc;
+                opt.innerText = loc;
+                locationSelect.appendChild(opt);
+            });
+        }
+
+        function getDangerUI(level) {
+            if (level <= 3) return 'border-green-900 shadow-[0_0_10px_rgba(34,197,94,0.1)]';
+            if (level <= 7) return 'border-orange-900 shadow-[0_0_10px_rgba(249,115,22,0.1)]';
+            return 'border-blood shadow-[0_0_15px_rgba(138,3,3,0.4)]';
+        }
+
+        function openModal(monster) {
+            const imgPath = `./${monster.image}`;
             modalContent.innerHTML = `
                 <div class="relative">
-                    <img src="${imgPath}" 
-                         onerror="this.src='${fallbackImage}'" 
-                         class="w-full h-64 object-cover border-b-2 border-blood" 
-                         alt="${monster.name}">
+                    <img src="${imgPath}" onerror="this.src='${fallbackImage}'" class="w-full h-64 object-cover border-b-2 border-blood" alt="${monster.name}">
                     <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60"></div>
                 </div>
                 <div class="p-6">
@@ -108,20 +151,15 @@
 
         function renderMonsters(monstersToRender) {
             listContainer.innerHTML = ''; 
-            if (monstersToRender.length === 0) {
-                listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full py-10 font-mono">No horrors found matching that description...</p>';
-                return;
-            }
-
             monstersToRender.forEach(monster => {
                 const card = document.createElement('div');
-                card.className = "bg-gray-900 border border-gray-800 rounded-xl shadow-lg hover:border-blood hover:shadow-[0_0_20px_rgba(138,3,3,0.4)] active:scale-95 transition-all duration-300 flex flex-col h-full cursor-pointer overflow-hidden touch-manipulation";
+                const dangerUI = getDangerUI(monster.danger_level);
+                
+                card.className = `bg-gray-900 border-2 rounded-xl transition-all duration-300 flex flex-col h-full cursor-pointer overflow-hidden touch-manipulation hover:scale-[1.02] ${dangerUI}`;
                 card.addEventListener('click', () => openModal(monster));
                 
-                const cardImgPath = `./${monster.image}`;
-
                 card.innerHTML = `
-                    <img src="${cardImgPath}" onerror="this.src='${fallbackImage}'" class="w-full h-48 object-cover border-b border-gray-800" alt="${monster.name}">
+                    <img src="./${monster.image}" onerror="this.src='${fallbackImage}'" class="w-full h-48 object-cover border-b border-gray-800">
                     <div class="p-5 flex flex-col flex-grow">
                         <div class="flex justify-between items-start mb-2">
                             <h2 class="text-2xl font-bold text-sickly drop-shadow-md">${monster.name}</h2>
@@ -131,9 +169,9 @@
                         <div class="flex-grow">
                             <p class="text-sm mb-4 text-gray-300 leading-relaxed line-clamp-3">${monster.description}</p>
                         </div>
-                        <div class="mt-auto pt-4 border-t border-gray-800 flex justify-between items-center">
-                            <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Click for Dossier</span>
-                            <span class="text-blood font-mono text-sm">DL: ${monster.danger_level}</span>
+                        <div class="mt-auto pt-4 border-t border-gray-800 flex justify-between items-center font-mono">
+                            <span class="text-[10px] text-gray-500 uppercase truncate pr-2">${monster.origin}</span>
+                            <span class="${monster.danger_level >= 8 ? 'text-blood font-black' : 'text-gray-400'} text-sm whitespace-nowrap">DL: ${monster.danger_level}</span>
                         </div>
                     </div>
                 `;
@@ -141,22 +179,46 @@
             });
         }
 
-        renderMonsters(cryptids);
+        function updateDisplay() {
+            const searchString = searchInput.value.toLowerCase();
+            const sortMethod = sortSelect.value;
+            const selectedLoc = locationSelect.value;
 
-        searchInput.addEventListener('keyup', (e) => {
-            const searchString = e.target.value.toLowerCase();
-            const filteredMonsters = cryptids.filter(monster => {
-                return (
+            let filtered = cryptids.filter(monster => {
+                const matchesSearch = (
                     monster.name.toLowerCase().includes(searchString) ||
                     monster.origin.toLowerCase().includes(searchString) ||
                     monster.category.toLowerCase().includes(searchString)
                 );
+                
+                const matchesLocation = selectedLoc === 'all' || monster.origin.includes(selectedLoc);
+                return matchesSearch && matchesLocation;
             });
-            renderMonsters(filteredMonsters);
-        });
+
+            filtered.sort((a, b) => {
+                switch(sortMethod) {
+                    case 'name': return a.name.localeCompare(b.name);
+                    case 'category': return a.category.localeCompare(b.category);
+                    case 'danger_desc': return b.danger_level - a.danger_level;
+                    case 'danger_asc': return a.danger_level - b.danger_level;
+                    case 'id': return parseInt(a.id) - parseInt(b.id);
+                    default: return 0;
+                }
+            });
+
+            renderMonsters(filtered);
+        }
+
+        populateLocations();
+        searchInput.addEventListener('keyup', updateDisplay);
+        sortSelect.addEventListener('change', updateDisplay);
+        locationSelect.addEventListener('change', updateDisplay);
+
+        updateDisplay();
+
         if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
+            navigator.serviceWorker.register('sw.js');
+        }
     </script>
 </body>
 </html>
