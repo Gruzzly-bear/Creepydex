@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creepydex</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { blood: '#8a0303', sickly: '#bada55', void: '#0a0a0a' } } }
+        }
+    </script>
+</head>
+<body class="bg-void text-gray-300 font-sans antialiased min-h-screen flex flex-col relative">
+
+    <header class="bg-gray-900 border-b border-blood p-4 sticky top-0 z-20 shadow-[0_4px_20px_rgba(138,3,3,0.5)]">
+        <div class="max-w-7xl mx-auto flex flex-col gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black text-blood text-center uppercase tracking-widest drop-shadow-md">Creepydex</h1>
+                <p class="text-center text-xs text-gray-500 mt-1 font-mono uppercase tracking-wider">Cataloging the world's worst neighbors</p>
+            </div>
+            <input type="text" id="search-input" placeholder="Search by name, origin, or category..." class="w-full bg-black border border-gray-700 text-gray-200 rounded-lg p-3 text-base md:text-lg focus:outline-none focus:border-blood focus:ring-1 focus:ring-blood transition-colors shadow-inner font-mono placeholder-gray-600">
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
+        <div id="monster-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+    </main>
+
+    <div id="monster-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-gray-900 border-2 border-blood rounded-xl shadow-[0_0_30px_rgba(138,3,3,0.6)] w-full max-w-lg relative overflow-hidden flex flex-col max-h-[90vh]">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-blood transition-colors z-10 bg-black/50 rounded-full p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div class="overflow-y-auto" id="modal-content"></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+
+    <script>
+        const listContainer = document.getElementById('monster-list');
+        const searchInput = document.getElementById('search-input');
+        const modal = document.getElementById('monster-modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalBtn = document.getElementById('close-modal');
+        
+        const fallbackImage = "https://placehold.co/600x400/111111/555555?text=NO+IMAGE+ON+FILE";
+
+        function openModal(monster) {
+            modalContent.innerHTML = `
+                <img src="${monster.image}" onerror="this.src='${fallbackImage}'" class="w-full h-64 object-cover border-b-2 border-blood" alt="${monster.name}">
+                <div class="p-6">
+                    <h2 class="text-4xl font-black text-sickly drop-shadow-md mb-2">${monster.name}</h2>
+                    <div class="mb-4 text-sm text-gray-400 font-bold uppercase tracking-widest border-b border-gray-800 pb-4">${monster.category} • ${monster.origin}</div>
+                    <div class="mb-6 flex items-center gap-3 bg-black/50 p-3 rounded border border-gray-800">
+                        <span class="text-blood font-black text-lg uppercase tracking-wider">Danger Level:</span> 
+                        <span class="text-white text-xl font-mono">${monster.danger_level} / 10</span>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-blood font-bold uppercase tracking-wider mb-2 text-sm">Target Description</h3>
+                            <p class="text-gray-300 leading-relaxed">${monster.description}</p>
+                        </div>
+                        <div>
+                            <h3 class="text-blood font-bold uppercase tracking-wider mb-2 text-sm">Known Lore / Behavior</h3>
+                            <p class="text-gray-300 leading-relaxed italic border-l-2 border-gray-700 pl-4">${monster.lore}</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 bg-black/80 p-4 rounded-lg border-l-4 border-sickly shadow-inner">
+                        <span class="font-black text-sickly block mb-2 uppercase tracking-widest text-lg">EXPLOITABLE WEAKNESS:</span> 
+                        <span class="text-gray-200 text-lg">${monster.weakness}</span>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; 
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        function renderMonsters(monstersToRender) {
+            listContainer.innerHTML = ''; 
+            if (monstersToRender.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full py-10 font-mono">No horrors found matching that description...</p>';
+                return;
+            }
+
+            monstersToRender.forEach(monster => {
+                const card = document.createElement('div');
+                card.className = "bg-gray-900 border border-gray-800 rounded-xl shadow-lg hover:border-blood hover:shadow-[0_0_20px_rgba(138,3,3,0.4)] transition-all duration-300 flex flex-col h-full cursor-pointer overflow-hidden";
+                card.addEventListener('click', () => openModal(monster));
+                
+                card.innerHTML = `
+                    <img src="${monster.image}" onerror="this.src='${fallbackImage}'" class="w-full h-48 object-cover border-b border-gray-800" alt="${monster.name}">
+                    <div class="p-5 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-2">
+                            <h2 class="text-2xl font-bold text-sickly drop-shadow-md">${monster.name}</h2>
+                            <span class="text-xs bg-black px-2 py-1 rounded border border-gray-700 text-gray-500 font-mono">#${monster.id}</span>
+                        </div>
+                        <div class="mb-4 text-xs text-gray-400 font-bold uppercase tracking-widest border-b border-gray-800 pb-2">${monster.category}</div>
+                        <div class="flex-grow">
+                            <p class="text-sm mb-4 text-gray-300 leading-relaxed line-clamp-3">${monster.description}</p>
+                        </div>
+                        <div class="mt-auto pt-4 border-t border-gray-800 flex justify-between items-center">
+                            <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Click for Dossier</span>
+                            <span class="text-blood font-mono text-sm">DL: ${monster.danger_level}</span>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        renderMonsters(cryptids);
+
+        searchInput.addEventListener('keyup', (e) => {
+            const searchString = e.target.value.toLowerCase();
+            const filteredMonsters = cryptids.filter(monster => {
+                return (
+                    monster.name.toLowerCase().includes(searchString) ||
+                    monster.origin.toLowerCase().includes(searchString) ||
+                    monster.category.toLowerCase().includes(searchString)
+                );
+            });
+            renderMonsters(filteredMonsters);
+        });
+    </script>
+</body>
+</html>
