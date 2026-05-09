@@ -41,6 +41,10 @@
             <div class="flex flex-col md:flex-row gap-3">
                 <input type="text" id="search-input" placeholder="Search name, origin, or category..." class="flex-grow bg-black border border-gray-700 text-gray-200 rounded-lg p-3 text-base focus:outline-none focus:border-blood focus:ring-1 focus:ring-blood transition-colors shadow-inner font-mono placeholder-gray-600">
                 
+                <button id="random-btn" class="bg-blood text-white font-black px-4 py-3 rounded-lg border border-red-900 shadow-[0_0_15px_rgba(138,3,3,0.4)] hover:bg-red-800 transition-colors touch-manipulation">
+                    🎲 RANDOM
+                </button>
+
                 <div class="flex gap-2">
                     <select id="location-select" class="bg-black border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none focus:border-blood font-mono cursor-pointer outline-none min-w-[140px]">
                         <option value="all">Global (All)</option>
@@ -213,6 +217,14 @@
         searchInput.addEventListener('keyup', updateDisplay);
         sortSelect.addEventListener('change', updateDisplay);
         locationSelect.addEventListener('change', updateDisplay);
+
+        // --- THE RANDOM ENCOUNTER BUTTON ---
+        const randomBtn = document.getElementById('random-btn');
+        randomBtn.addEventListener('click', () => {
+            const randomIndex = Math.floor(Math.random() * cryptids.length);
+            openModal(cryptids[randomIndex]);
+        });
+        // -----------------------------------
 
         updateDisplay();
 
